@@ -83,19 +83,23 @@ const Dashboard = () => {
     };
 
     const handleSeed = async () => {
-        if (confirm('Dette vil laste opp alle standardspørsmål til databasen. Gjør dette KUN hvis databasen er tom. Vil du fortsette?')) {
-            try {
-                setLoading(true);
-                await seedDatabase();
-                // Refresh
-                const data = await getQuestions(selectedCategory);
-                setQuestions(data);
-                alert('Database seedet!');
-            } catch (err) {
-                alert('Feil under seeding: ' + err.message);
-            } finally {
-                setLoading(false);
+        try {
+            setLoading(true);
+            const result = await seedDatabase(); // Additive seed
+
+            // Refresh
+            const data = await getQuestions(selectedCategory);
+            setQuestions(data);
+
+            if (result.added > 0) {
+                alert(`Suksess! ${result.added} nye spørsmål ble lagt til. (${result.skipped} duplikater hoppet over).`);
+            } else {
+                alert('Ingen nye spørsmål å legge til. Alt er oppdatert!');
             }
+        } catch (err) {
+            alert('Feil under oppdatering: ' + err.message);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -104,7 +108,7 @@ const Dashboard = () => {
             <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <h2>Admin Dashboard</h2>
                 <div style={{ display: 'flex', gap: '1rem' }}>
-                    <Button variant="secondary" onClick={handleSeed} style={{ borderColor: '#6366f1', color: '#6366f1' }}>Last opp spørsmål til DB</Button>
+                    <Button variant="secondary" onClick={handleSeed} style={{ borderColor: '#6366f1', color: '#6366f1' }}>Last opp nye spørsmål</Button>
                     <Button variant="secondary" onClick={handleLogout}>Logg ut</Button>
                 </div>
             </header>

@@ -104,7 +104,7 @@ const QuizGame = () => {
 
     const finishGame = (finalScore) => {
         setGameState('finished');
-        navigate('/results', { state: { score: finalScore, total: questions.length } });
+        navigate('/results', { state: { score: finalScore, total: questions.length, category } });
     };
 
     if (gameState === 'loading') return <div className="full-screen-center">Laster spørsmål...</div>;
