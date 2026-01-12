@@ -1,20 +1,32 @@
 import React, { useEffect, useState } from 'react';
-import { getTopScores } from '../../services/quizService';
-import Card from '../ui/Card';
+import { db } from '../../lib/firebase';
+import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
 
-const Leaderboard = ({ refreshTrigger = 0 }) => {
+const Leaderboard = ({ limitCount = 10 }) => {
     const [scores, setScores] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchScores = async () => {
-            setLoading(true);
-            const data = await getTopScores(10);
+        const q = query(
+            collection(db, 'results'),
+            orderBy('score', 'desc'),
+            limit(limitCount)
+        );
+
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+            const data = querySnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
             setScores(data);
             setLoading(false);
-        };
-        fetchScores();
-    }, [refreshTrigger]);
+        }, (error) => {
+            console.error("Error watching leaderboard:", error);
+            setLoading(false);
+        });
+
+        return () => unsubscribe();
+    }, []);
 
     if (loading) return <div style={{ color: '#94a3b8', textAlign: 'center' }}>Laster toppliste...</div>;
 

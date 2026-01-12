@@ -1,5 +1,5 @@
 import { db } from '../lib/firebase';
-import { collection, getDocs, addDoc, updateDoc, deleteDoc, doc, query, where, orderBy, limit, writeBatch } from 'firebase/firestore';
+import { collection, getDocs, addDoc, setDoc, updateDoc, deleteDoc, doc, query, where, orderBy, limit, writeBatch } from 'firebase/firestore';
 import { INITIAL_QUESTIONS } from '../lib/questions_seed';
 
 const QUESTIONS_COLLECTION = 'questions';
@@ -66,14 +66,24 @@ const RESULTS_COLLECTION = 'results';
 
 export const saveResult = async (resultData) => {
     try {
-        // resultData: { username, score, category, date }
-        await addDoc(collection(db, RESULTS_COLLECTION), {
-            ...resultData,
-            createdAt: new Date().toISOString()
-        });
+        const { gameId, ...data } = resultData;
+
+        const timestamp = new Date().toISOString();
+        const payload = {
+            ...data,
+            createdAt: timestamp
+        };
+
+        if (gameId) {
+            // Idempotent save: use gameId as document ID
+            await setDoc(doc(db, RESULTS_COLLECTION, gameId), payload);
+        } else {
+            // Fallback: auto-generated ID
+            await addDoc(collection(db, RESULTS_COLLECTION), payload);
+        }
     } catch (error) {
         console.error("Error saving result:", error);
-        // Don't throw, just log to prevent blocking UX
+        throw error;
     }
 };
 

@@ -1,27 +1,35 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 
-const TimerBar = ({ duration, onTimeout, active, keyProp }) => {
+const TimerBar = ({ duration, onTimeout, active, startTime }) => {
     const [width, setWidth] = useState(100);
+    const frameRef = useRef();
 
     useEffect(() => {
-        if (!active) return;
+        if (!active || !startTime) {
+            setWidth(100);
+            return;
+        }
 
-        setWidth(100);
-        const startTime = Date.now();
-        const interval = setInterval(() => {
+        const update = () => {
             const elapsed = Date.now() - startTime;
-            const remainingPercentage = Math.max(0, 100 - (elapsed / (duration * 1000)) * 100);
+            const remaining = Math.max(0, duration * 1000 - elapsed);
+            const percentage = (remaining / (duration * 1000)) * 100;
 
-            setWidth(remainingPercentage);
+            setWidth(percentage);
 
-            if (elapsed >= duration * 1000) {
-                clearInterval(interval);
+            if (remaining <= 0) {
                 onTimeout();
+            } else {
+                frameRef.current = requestAnimationFrame(update);
             }
-        }, 50); // Update every 50ms for smoothness
+        };
 
-        return () => clearInterval(interval);
-    }, [duration, onTimeout, active, keyProp]); // keyProp is used to force reset on new question
+        frameRef.current = requestAnimationFrame(update);
+
+        return () => {
+            if (frameRef.current) cancelAnimationFrame(frameRef.current);
+        };
+    }, [duration, onTimeout, active, startTime]);
 
     return (
         <div style={{ width: '100%', height: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '4px', overflow: 'hidden', marginTop: '1rem' }}>
@@ -29,8 +37,10 @@ const TimerBar = ({ duration, onTimeout, active, keyProp }) => {
                 style={{
                     width: `${width}%`,
                     height: '100%',
-                    background: width < 30 ? '#ef4444' : '#6366f1', // Red warning if low time
-                    transition: 'width 0.05s linear, background 0.3s'
+                    background: width < 30 ? '#ef4444' : '#6366f1',
+                    borderRadius: '4px',
+                    // Removing transition for smoother frame-by-frame updates without lag
+                    // transition: 'width 0.05s linear' 
                 }}
             />
         </div>

@@ -6,6 +6,8 @@ import CategorySelector from './components/quiz/CategorySelector';
 import QuizGame from './components/quiz/QuizGame';
 import ResultScreen from './components/quiz/ResultScreen';
 
+import ProfileScreen from './components/profile/ProfileScreen';
+
 // Temporary placeholders until components are built
 const Placeholder = ({ title }) => (
   <div className="container animate-fade-in">
@@ -29,6 +31,7 @@ function App() {
         <Route path="/categories" element={<CategorySelector />} />
         <Route path="/quiz" element={<QuizGame />} />
         <Route path="/results" element={<ResultScreen />} />
+        <Route path="/profile" element={<ProfileScreen />} />
 
         {/* Fallback */}
         <Route path="*" element={<Navigate to="/" replace />} />
