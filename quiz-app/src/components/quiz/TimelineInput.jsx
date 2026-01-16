@@ -41,6 +41,48 @@ const TimelineInput = ({ events, onChange, disabled, correctOrder, showResult })
         if (dragItem.current !== null && dragOverItem.current !== null) {
             handleSort();
         }
+        dragItem.current = null;
+        dragOverItem.current = null;
+    };
+
+    // Touch Support
+    const handleTouchStart = (e, index) => {
+        if (disabled) return;
+        dragItem.current = index;
+        // Optionally add visual feedback for 'picked up' item
+    };
+
+    const handleTouchMove = (e) => {
+        if (disabled) return;
+        // e.preventDefault(); // Might interfere with scrolling if user scrolls page? 
+        // Only prevent if we are actively dragging?
+        // Let's rely on standard scrolling unless we detect a significant hold?
+        // Actually, if we preventDefault, we block page scroll. That's annoying if list is long.
+        // But for sorting, we MUST block scroll to drag.
+        // Let's assume standard behavior: Press & Move = Drag.
+
+        const touch = e.touches[0];
+        const target = document.elementFromPoint(touch.clientX, touch.clientY);
+
+        if (target) {
+            const row = target.closest('[data-index]');
+            if (row) {
+                const newIndex = parseInt(row.getAttribute('data-index'));
+                if (!isNaN(newIndex) && newIndex !== dragOverItem.current) {
+                    dragOverItem.current = newIndex;
+                    // Could add visual feedback class here?
+                }
+            }
+        }
+    };
+
+    const handleTouchEnd = (e) => {
+        if (disabled) return;
+        if (dragItem.current !== null && dragOverItem.current !== null && dragItem.current !== dragOverItem.current) {
+            handleSort();
+        }
+        dragItem.current = null;
+        dragOverItem.current = null;
     };
 
     // Explicit Move Logic for Buttons (keeping as backup for accessibility/mobile)
@@ -61,11 +103,18 @@ const TimelineInput = ({ events, onChange, disabled, correctOrder, showResult })
                 return (
                     <div
                         key={event.id}
+                        data-index={index}
                         draggable={!disabled && !showResult}
                         onDragStart={(e) => handleDragStart(e, index)}
                         onDragEnter={(e) => handleDragEnter(e, index)}
                         onDragEnd={handleDragEnd}
-                        onDragOver={(e) => e.preventDefault()} // Essential to allow dropping
+                        onDragOver={(e) => e.preventDefault()}
+
+                        // Touch Events
+                        onTouchStart={(e) => handleTouchStart(e, index)}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={handleTouchEnd}
+
                         className="glass-panel"
                         style={{
                             display: 'flex',
@@ -80,8 +129,8 @@ const TimelineInput = ({ events, onChange, disabled, correctOrder, showResult })
                                 : 'transparent',
                             cursor: disabled ? 'default' : 'grab',
                             transition: 'all 0.2s ease',
-                            border: '1px solid transparent', // reserve space for border
-                            // Visual feedback handled by CSS usually, but simple approach here
+                            border: '1px solid transparent',
+                            touchAction: 'none', // Prevents scrolling while dragging on this element
                         }}
                     >
                         {/* Drag Handle Icon (Optional visual cue) */}

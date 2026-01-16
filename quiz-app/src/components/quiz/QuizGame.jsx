@@ -7,7 +7,7 @@ import TimerBar from './TimerBar';
 import SliderInput from './SliderInput';
 import TimelineInput from './TimelineInput';
 
-const QUESTION_DURATION = 15; // Increased slightly for complex Qs
+const QUESTION_DURATION = 10; // Standard duration (MC, Slider)
 const POINTS_CORRECT = 10;
 
 const QuizGame = () => {
@@ -21,6 +21,7 @@ const QuizGame = () => {
     const [gameState, setGameState] = useState('loading'); // loading, active, answer_reveal, finished
     const [startTime, setStartTime] = useState(Date.now());
     const [gameId, setGameId] = useState(null);
+    const [lastPoints, setLastPoints] = useState(0); // For animation
 
     // Question State
     const [selectedOption, setSelectedOption] = useState(null); // MC
@@ -84,10 +85,35 @@ const QuizGame = () => {
                     return;
                 }
 
-                const shuffled = data.sort(() => 0.5 - Math.random()).slice(0, 10);
-                setQuestions(shuffled);
+                let finalQuestions = [];
 
-                initQuestionState(shuffled[0]);
+                if (category === 'Alle') {
+                    // "Mesternes Arena": Mix Logic -> Guarantee Beta/Special questions
+                    const specialQuestions = data.filter(q => q.type === 'slider' || q.type === 'timeline' || q.category === 'Beta');
+                    const standardQuestions = data.filter(q => !specialQuestions.includes(q));
+
+                    // Randomize both pools
+                    specialQuestions.sort(() => 0.5 - Math.random());
+                    standardQuestions.sort(() => 0.5 - Math.random());
+
+                    // Take 3 Special, 7 Standard (or adjust if pools are small)
+                    const specialCount = Math.min(specialQuestions.length, 3);
+                    const standardCount = 10 - specialCount;
+
+                    finalQuestions = [
+                        ...specialQuestions.slice(0, specialCount),
+                        ...standardQuestions.slice(0, standardCount)
+                    ];
+
+                    // Shuffle the mix
+                    finalQuestions.sort(() => 0.5 - Math.random());
+                } else {
+                    // Standard Category Logic
+                    finalQuestions = data.sort(() => 0.5 - Math.random()).slice(0, 10);
+                }
+
+                setQuestions(finalQuestions);
+                initQuestionState(finalQuestions[0]);
 
                 setGameState('active');
                 setStartTime(Date.now());
@@ -134,9 +160,20 @@ const QuizGame = () => {
 
     // Helper: Get Duration based on type
     const getQuestionDuration = (q) => {
-        if (!q) return 15;
-        if (q.type === 'slider' || q.type === 'timeline') return 20;
-        return 15;
+        if (!q) return 10;
+        if (q.type === 'timeline') return 20;
+        return 10;
+    };
+
+    // Helper: Calculate Slider Tolerance
+    const calculateTolerance = (q) => {
+        if (!q || q.type !== 'slider') return 0;
+        const range = q.max - q.min;
+        const rangeTolerance = range * 0.05; // 5% of Range
+        if (q.correctAnswer === 0) return Math.max(q.step, rangeTolerance);
+        const valueTolerance = Math.abs(q.correctAnswer * 0.05); // 5% of Value
+        const safeValueTolerance = Math.max(q.step, valueTolerance);
+        return Math.min(rangeTolerance, safeValueTolerance);
     };
 
     // Generic Submit Handler
@@ -145,37 +182,60 @@ const QuizGame = () => {
 
         const currentQ = questions[currentIndex];
         const currentDuration = getQuestionDuration(currentQ);
+        const sliderTolerance = calculateTolerance(currentQ);
 
         const timeTaken = (Date.now() - startTime) / 1000;
         const timeLeft = Math.max(0, currentDuration - timeTaken);
 
-        // Calculate Correctness
-        let isCorrect = false;
+        // Calculate Points & Correctness
+        let pointsEarned = 0;
+        let isCorrect = false; // For binary "Passed/Failed" (used for simple stats or green flash if needed)
 
         if (currentQ.type === 'slider') {
-            const range = currentQ.max - currentQ.min;
-            const tolerance = range * 0.05; // 5% margin
             const diff = Math.abs(sliderValue - currentQ.correctAnswer);
-            isCorrect = diff <= tolerance;
+            isCorrect = diff <= sliderTolerance;
+            if (isCorrect) {
+                pointsEarned = POINTS_CORRECT + Math.floor(timeLeft);
+            }
         } else if (currentQ.type === 'timeline') {
-            // Check order
             const correctOrder = [...currentQ.events].sort((a, b) => a.year - b.year);
-            const userIds = timelineEvents.map(e => e.id).join(',');
-            const correctIds = correctOrder.map(e => e.id).join(',');
-            isCorrect = userIds === correctIds;
+            let matches = 0;
+            timelineEvents.forEach((event, index) => {
+                if (event.id === correctOrder[index].id) {
+                    matches++;
+                }
+            });
+
+            // 2 pts per correct item
+            const matchPoints = matches * 2;
+
+            // Time Bonus: Half of normal (0.5 * timeLeft)
+            // Only award time bonus if they got at least something right? 
+            // Or maybe only if fully correct? User said "halvparten av tidspoengene på de".
+            // Implies we just add it. Assuming we add time bonus if matches > 0? 
+            // Or maybe time bonus is always added but halved?
+            // Let's assume Time Bonus requires > 0 matches (effort made).
+
+            const timeBonus = matches > 0 ? Math.floor(timeLeft * 0.5) : 0;
+
+            pointsEarned = matchPoints + timeBonus;
+
+            // For binary correctness, let's say "All Correct"
+            isCorrect = matches === correctOrder.length;
         } else {
-            // Multiple Choice (handled via click usually, but if timed out...)
+            // Multiple Choice
             isCorrect = selectedOption === currentQ.correctAnswerIndex;
+            if (isCorrect) {
+                pointsEarned = POINTS_CORRECT + Math.floor(timeLeft);
+            }
         }
 
-        // Calculate Points
-        let pointsEarned = 0;
-        let newScore = score;
-
-        if (isCorrect) {
-            pointsEarned = POINTS_CORRECT + Math.floor(timeLeft);
-            newScore = score + pointsEarned;
+        const newScore = score + pointsEarned;
+        if (pointsEarned > 0) {
             setScore(newScore);
+            setLastPoints(pointsEarned);
+        } else {
+            setLastPoints(0);
         }
 
         setGameState('answer_reveal');
@@ -188,11 +248,6 @@ const QuizGame = () => {
     // Specific Handlers
     const handleMCOptionClick = (idx) => {
         setSelectedOption(idx);
-        // We need to trigger submit, but we need to pass that this option IS the selected one 
-        // effectively 'selectedOption' state might not update fast enough for immediate read in handleSubmit
-        // So we adapt Calculate Correctness logic locally or force a synchronous flow.
-
-        // Let's inline the logic for MC to keep it snappy
         if (gameState !== 'active') return;
 
         const currentQ = questions[currentIndex];
@@ -208,7 +263,12 @@ const QuizGame = () => {
         if (isCorrect) {
             pointsEarned = POINTS_CORRECT + Math.floor(timeLeft);
             newScore = score + pointsEarned;
+            pointsEarned = POINTS_CORRECT + Math.floor(timeLeft);
+            newScore = score + pointsEarned;
             setScore(newScore);
+            setLastPoints(pointsEarned);
+        } else {
+            setLastPoints(0);
         }
 
         setGameState('answer_reveal');
@@ -218,7 +278,7 @@ const QuizGame = () => {
     const handleTimeout = useCallback(() => {
         if (gameState !== 'active') return;
         handleSubmit(true); // Auto submit current state
-    }, [gameState, score, sliderValue, timelineEvents, questions, currentIndex, startTime]); // Added startTime dep
+    }, [gameState, score, sliderValue, timelineEvents, questions, currentIndex, startTime]);
 
     const advanceQuestion = (currentScore) => {
         const scoreToUse = currentScore !== undefined ? currentScore : score;
@@ -246,6 +306,7 @@ const QuizGame = () => {
 
     const currentQ = questions[currentIndex];
     const currentDuration = getQuestionDuration(currentQ);
+    const sliderTolerance = calculateTolerance(currentQ);
 
     // Helpers for Reveal
     const getSortedEvents = () => {
@@ -254,7 +315,15 @@ const QuizGame = () => {
 
     return (
         <div className="container full-screen-center" style={{ minHeight: '100vh', padding: '1rem' }}>
-            <div style={{ width: '100%', maxWidth: '600px' }}>
+            <div style={{ width: '100%', maxWidth: '600px', position: 'relative' }}>
+
+                {/* Score Animation */}
+                {gameState === 'answer_reveal' && lastPoints > 0 && (
+                    <div key={currentIndex} className="flying-points">
+                        +{lastPoints}
+                    </div>
+                )}
+
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', color: '#cbd5e1' }}>
                     <span>Spørsmål {currentIndex + 1} / {questions.length}</span>
                     <span>Poeng: {score}</span>
@@ -296,6 +365,7 @@ const QuizGame = () => {
                                 disabled={gameState !== 'active'}
                                 correctValue={currentQ.correctAnswer}
                                 showResult={gameState === 'answer_reveal'}
+                                tolerance={sliderTolerance}
                             />
                             {gameState === 'active' && (
                                 <Button onClick={() => handleSubmit()} style={{ width: '100%', marginTop: '1rem' }}>

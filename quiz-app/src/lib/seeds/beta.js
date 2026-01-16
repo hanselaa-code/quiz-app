@@ -1,5 +1,5 @@
 export const BETA_QUESTIONS = [
-    // --- SLIDER QUESTIONS (10) ---
+    // --- SLIDER QUESTIONS (20) ---
     {
         category: 'Beta',
         type: 'slider',
@@ -100,8 +100,110 @@ export const BETA_QUESTIONS = [
         unit: 'meter',
         correctAnswer: 8848
     },
+    // NEW Sliders
+    {
+        category: 'Beta',
+        type: 'slider',
+        questionText: 'Hvor raskt går lyden i luft (ved 20°C)?',
+        min: 0,
+        max: 1000,
+        step: 10,
+        unit: 'm/s',
+        correctAnswer: 343
+    },
+    {
+        category: 'Beta',
+        type: 'slider',
+        questionText: 'Hva er toppfarten til en gepard?',
+        min: 0,
+        max: 200,
+        step: 1,
+        unit: 'km/t',
+        correctAnswer: 120
+    },
+    {
+        category: 'Beta',
+        type: 'slider',
+        questionText: 'Hvor langt er det fra Jorden til Månen (gjennomsnitt)?',
+        min: 0,
+        max: 500000,
+        step: 1000,
+        unit: 'km',
+        correctAnswer: 384400
+    },
+    {
+        category: 'Beta',
+        type: 'slider',
+        questionText: 'Hvor mange stjerner er det i EU-flagget?',
+        min: 0,
+        max: 50,
+        step: 1,
+        unit: 'stjerner',
+        correctAnswer: 12
+    },
+    {
+        category: 'Beta',
+        type: 'slider',
+        questionText: 'Hvor mange minutter er det i et døgn?',
+        min: 0,
+        max: 2000,
+        step: 10,
+        unit: 'minutter',
+        correctAnswer: 1440
+    },
+    {
+        category: 'Beta',
+        type: 'slider',
+        questionText: 'Når falt Berlinmuren?',
+        min: 1900,
+        max: 2000,
+        step: 1,
+        unit: 'år',
+        correctAnswer: 1989
+    },
+    {
+        category: 'Beta',
+        type: 'slider',
+        questionText: 'Hvor mange brikker er det i et sjakkspill (totalt)?',
+        min: 0,
+        max: 64,
+        step: 1,
+        unit: 'brikker',
+        correctAnswer: 32
+    },
+    {
+        category: 'Beta',
+        type: 'slider',
+        questionText: 'Hva er gjennomsnittstemperaturen på Mars?',
+        min: -100,
+        max: 0,
+        step: 1,
+        unit: 'grader',
+        correctAnswer: -63
+    },
+    {
+        category: 'Beta',
+        type: 'slider',
+        questionText: 'Hvor mange liter blod har et voksent menneske (ca)?',
+        min: 0,
+        max: 10,
+        step: 0.5,
+        unit: 'liter',
+        correctAnswer: 5
+    },
+    {
+        category: 'Beta',
+        type: 'slider',
+        questionText: 'Hvor mange år satt Nelson Mandela i fengsel?',
+        min: 0,
+        max: 50,
+        step: 1,
+        unit: 'år',
+        correctAnswer: 27
+    },
 
-    // --- TIMELINE QUESTIONS (10) ---
+
+    // --- TIMELINE QUESTIONS (20) ---
     {
         category: 'Beta',
         type: 'timeline',
@@ -220,6 +322,67 @@ export const BETA_QUESTIONS = [
             { id: 'c', text: 'Woodstock-festivalen', year: 1969 },
             { id: 'd', text: 'Micheal Jackson "Thriller"', year: 1982 },
             { id: 'e', text: 'Nirvana "Smells Like Teen Spirit"', year: 1991 }
+        ]
+    },
+    // NEW Timelines
+    {
+        category: 'Beta',
+        type: 'timeline',
+        questionText: 'Ranger disse Harry Potter-bøkene etter utgivelse:',
+        events: [
+            { id: 'a', text: 'De vises stein', year: 1997 },
+            { id: 'b', text: 'Ildbegeret', year: 2000 },
+            { id: 'c', text: 'Føniksordenen', year: 2003 },
+            { id: 'd', text: 'Halvblodsprinsen', year: 2005 },
+            { id: 'e', text: 'Dødstalismanene', year: 2007 }
+        ]
+    },
+    {
+        category: 'Beta',
+        type: 'timeline',
+        questionText: 'Ranger disse Marvel-filmene etter utgivelsesår:',
+        events: [
+            { id: 'a', text: 'Iron Man', year: 2008 },
+            { id: 'b', text: 'The Avengers', year: 2012 },
+            { id: 'c', text: 'Guardians of the Galaxy', year: 2014 },
+            { id: 'd', text: 'Black Panther', year: 2018 },
+            { id: 'e', text: 'Avengers: Endgame', year: 2019 }
+        ]
+    },
+    {
+        category: 'Beta',
+        type: 'timeline',
+        questionText: 'Ranger disse oppfinnelsene innen kommunikasjon:',
+        events: [
+            { id: 'a', text: 'Telegrafen', year: 1837 },
+            { id: 'b', text: 'Telefonen', year: 1876 },
+            { id: 'c', text: 'Radioen', year: 1895 },
+            { id: 'd', text: 'Fjernsynet (TV)', year: 1927 },
+            { id: 'e', text: 'SMS', year: 1992 }
+        ]
+    },
+    {
+        category: 'Beta',
+        type: 'timeline',
+        questionText: 'Ranger disse norske hendelsene:',
+        events: [
+            { id: 'a', text: 'Unionsoppløsningen', year: 1905 },
+            { id: 'b', text: 'Kvinner får stemmerett', year: 1913 },
+            { id: 'c', text: 'Oljefunnet på Ekofisk', year: 1969 },
+            { id: 'd', text: 'OL på Lillehammer', year: 1994 },
+            { id: 'e', text: 'Operaen i Oslo åpnes', year: 2008 }
+        ]
+    },
+    {
+        category: 'Beta',
+        type: 'timeline',
+        questionText: 'Ranger disse konsollene etter utgivelse (Europa/USA):',
+        events: [
+            { id: 'a', text: 'Nintendo 64', year: 1996 },
+            { id: 'b', text: 'PlayStation 2', year: 2000 },
+            { id: 'c', text: 'Xbox 360', year: 2005 },
+            { id: 'd', text: 'PlayStation 4', year: 2013 },
+            { id: 'e', text: 'Nintendo Switch', year: 2017 }
         ]
     }
 ];

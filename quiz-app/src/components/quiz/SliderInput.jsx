@@ -1,8 +1,10 @@
 import React from 'react';
 
-const SliderInput = ({ min, max, step, unit, value, onChange, disabled, correctValue, showResult }) => {
+const SliderInput = ({ min, max, step, unit, value, onChange, disabled, correctValue, showResult, tolerance }) => {
     // Calculate percentage for background gradient
     const percentage = ((value - min) / (max - min)) * 100;
+    const diff = Math.abs(value - correctValue);
+    const isWithinTolerance = tolerance ? diff <= tolerance : false;
 
     return (
         <div style={{ width: '100%', padding: '1rem 0' }}>
@@ -74,13 +76,30 @@ const SliderInput = ({ min, max, step, unit, value, onChange, disabled, correctV
             {/* Result Reveal */}
             {showResult && (
                 <div className="animate-fade-in" style={{ marginTop: '2rem', padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.1)' }}>
+
+                    {/* Explicit Result Banner */}
+                    <div style={{
+                        textAlign: 'center',
+                        padding: '0.5rem',
+                        borderRadius: '8px',
+                        background: isWithinTolerance ? 'rgba(74, 222, 128, 0.2)' : 'rgba(239, 68, 68, 0.2)',
+                        border: `1px solid ${isWithinTolerance ? '#4ade80' : '#ef4444'}`,
+                        marginBottom: '1rem',
+                        fontWeight: 'bold',
+                        color: isWithinTolerance ? '#4ade80' : '#ef4444',
+                        textTransform: 'uppercase',
+                        letterSpacing: '1px'
+                    }}>
+                        {isWithinTolerance ? 'Riktig! (Innenfor 5%)' : 'Feil! (Utenfor feilmargin)'}
+                    </div>
+
                     <div style={{ fontSize: '0.9rem', color: '#94a3b8', marginBottom: '0.5rem' }}>Riktig Svar:</div>
                     <div style={{ fontSize: '1.5rem', color: '#4ade80', fontWeight: 'bold' }}>
                         {correctValue.toLocaleString()} {unit}
                     </div>
                     <div style={{ fontSize: '0.9rem', marginTop: '0.5rem', color: '#cbd5e1' }}>
-                        Din feilmargin: <span style={{ color: Math.abs(value - correctValue) <= (max - min) * 0.1 ? '#4ade80' : '#ef4444' }}>
-                            {Math.abs(value - correctValue).toLocaleString()} ({Math.round((Math.abs(value - correctValue) / (max - min)) * 100)}%)
+                        Din feilmargin: <span style={{ color: isWithinTolerance ? '#4ade80' : '#ef4444' }}>
+                            {diff.toLocaleString()} ({Math.round((diff / (max - min)) * 100)}%)
                         </span>
                     </div>
                 </div>

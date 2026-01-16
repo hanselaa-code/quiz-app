@@ -23,7 +23,15 @@ const QuestionList = ({ questions, onEdit, onDelete }) => {
                     <div>
                         <p style={{ fontWeight: 'bold', margin: '0 0 0.5rem 0' }}>{q.questionText}</p>
                         <p style={{ fontSize: '0.85rem', color: '#cbd5e1', margin: 0 }}>
-                            Correct: <span style={{ color: '#4ade80' }}>{q.options[q.correctAnswerIndex]}</span>
+                            {(!q.type || q.type === 'multiple_choice') && (
+                                <>Correct: <span style={{ color: '#4ade80' }}>{q.options?.[q.correctAnswerIndex]}</span></>
+                            )}
+                            {q.type === 'slider' && (
+                                <>Svar: <span style={{ color: '#4ade80' }}>{q.correctAnswer}</span> ({q.min}-{q.max})</>
+                            )}
+                            {q.type === 'timeline' && (
+                                <>Tidslinje: <span style={{ color: '#4ade80' }}>{q.events?.length || 0} hendelser</span></>
+                            )}
                         </p>
                     </div>
                     <div style={{ display: 'flex', gap: '0.5rem' }}>

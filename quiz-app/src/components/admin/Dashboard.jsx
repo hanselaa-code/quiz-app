@@ -1,12 +1,18 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CATEGORIES } from '../../lib/questions_seed';
-import { getQuestions, addQuestion, updateQuestion, deleteQuestion, seedDatabase } from '../../services/quizService';
+import { getQuestions, addQuestion, updateQuestion, deleteQuestion, seedDatabase, resetLeaderboard } from '../../services/quizService';
+import { db } from '../../lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import Button from '../ui/Button';
 import Card from '../ui/Card';
 import QuestionList from './QuestionList';
 import QuestionForm from './QuestionForm';
 import UserList from './UserList';
+
+import { auth } from '../../lib/firebase';
+import { signOut, onAuthStateChanged } from 'firebase/auth';
 
 const Dashboard = () => {
     const navigate = useNavigate();
@@ -17,38 +23,48 @@ const Dashboard = () => {
     const [currentQuestion, setCurrentQuestion] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [user, setUser] = useState(null);
 
-    // Authorization Check
+    // Authorization Check (Firebase Auth + Whitelist)
     useEffect(() => {
-        const isAuth = localStorage.getItem('admin_auth');
-        if (!isAuth) {
-            navigate('/admin');
-        }
+        const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+            if (!currentUser) {
+                navigate('/admin');
+            } else {
+                // Verify if user is in 'admins' whitelist
+                try {
+                    const adminRef = doc(db, 'admins', currentUser.email);
+                    const adminSnap = await getDoc(adminRef);
+
+                    if (adminSnap.exists()) {
+                        setUser(currentUser);
+                    } else {
+                        console.warn(`Unauthorized access attempt by: ${currentUser.email}`);
+                        alert("Du har ikke admin-tilgang. Kontakt eier hvis dette er feil.");
+                        await signOut(auth);
+                        navigate('/');
+                    }
+                } catch (err) {
+                    console.error("Error verifying admin status:", err);
+                    setError("Kunne ikke verifisere admin-status.");
+                }
+            }
+        });
+        return () => unsubscribe();
     }, [navigate]);
 
-    // Load data from Firestore
+    // Cleanup legacy local storage check just in case
     useEffect(() => {
-        if (activeTab === 'questions') {
-            const fetchData = async () => {
-                setLoading(true);
-                setError('');
-                try {
-                    const data = await getQuestions(selectedCategory);
-                    setQuestions(data);
-                } catch (err) {
-                    console.error(err);
-                    setError('Kunne ikke laste spørsmål. Sjekk Firebase-konfigurasjonen.');
-                } finally {
-                    setLoading(false);
-                }
-            };
-            fetchData();
-        }
-    }, [selectedCategory, activeTab]);
-
-    const handleLogout = () => {
         localStorage.removeItem('admin_auth');
-        navigate('/admin');
+    }, []);
+
+    const handleLogout = async () => {
+        try {
+            await signOut(auth);
+            navigate('/');
+        } catch (error) {
+            console.error("Logout failed", error);
+        }
     };
 
     const handleEdit = (question) => {
@@ -106,12 +122,29 @@ const Dashboard = () => {
         }
     };
 
+    const handleResetLeaderboard = async () => {
+        if (window.confirm('ADVARSEL: Dette vil slette ALLE resultater fra topplisten permanent. Er du sikker?')) {
+            setLoading(true);
+            try {
+                await resetLeaderboard();
+                alert('Topplisten er nullstilt.');
+            } catch (error) {
+                alert('Feil ved nullstilling av toppliste');
+            } finally {
+                setLoading(false);
+            }
+        }
+    };
+
     return (
         <div className="container animate-fade-in">
             <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <h2>Admin Dashboard</h2>
                 <div style={{ display: 'flex', gap: '1rem' }}>
                     <Button variant="secondary" onClick={handleSeed} style={{ borderColor: '#6366f1', color: '#6366f1' }}>Last opp nye spørsmål</Button>
+                    <Button onClick={handleResetLeaderboard} style={{ background: '#ef4444', borderColor: '#ef4444', color: 'white' }}>
+                        🛑 Nullstill Toppliste
+                    </Button>
                     <Button variant="secondary" onClick={handleLogout}>Logg ut</Button>
                 </div>
             </header>
